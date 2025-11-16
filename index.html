@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat în timp real</title>
+
+  <!-- PWA -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/manifest.json">
+
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #e5e7eb;
+    }
+
+    .chat-wrapper {
+      width: 100%;
+      max-width: 460px;
+      padding: 12px;
+    }
+
+    .chat-container {
+      background: #020617;
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      height: 640px;
+      border: 1px solid #1f2937;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid #111827;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: radial-gradient(circle at top left, #22c55e33, transparent 60%);
+      gap: 8px;
+    }
+
+    .chat-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .chat-title {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .chat-subtitle {
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    .chat-header-right {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+    }
+
+    .user-info {
+      font-size: 12px;
+      opacity: 0.9;
+      text-align: right;
+    }
+
+    .lang-switch {
+      display: flex;
+      gap: 4px;
+    }
+
+    .lang-switch button {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .lang-switch button.active {
+      background: #22c55e;
+      color: #020617;
+      border-color: #22c55e;
+    }
+
+    .chat-messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      background:
+        radial-gradient(circle at top left, #22c55e11, transparent 60%),
+        radial-gradient(circle at bottom right, #3b82f611, transparent 60%),
+        #020617;
+    }
+
+    .message {
+      margin-bottom: 8px;
+      max-width: 80%;
+      padding: 6px 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.3;
+      clear: both;
+      display: inline-block;
+      position: relative;
+    }
+
+    .message.self {
+      background: #2563eb;
+      color: #e5e7eb;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .message.other {
+      background: #1f2937;
+      color: #e5e7eb;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    .meta {
+      font-size: 11px;
+      opacity: 0.75;
+      margin-bottom: 2px;
+    }
+
+    .text {
+      word-wrap: break-word;
+    }
+
+    .chat-input-area {
+      border-top: 1px solid #111827;
+      padding: 8px;
+      background: #020617;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    .chat-input-area input::placeholder {
+      color: #6b7280;
+    }
+
+    .chat-input-area button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .chat-input-area button:active {
+      transform: scale(0.97);
+    }
+
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      font-size: 11px;
+      border-top: 1px solid #111827;
+      background: #020617;
+      color: #9ca3af;
+    }
+
+    .toolbar button {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .toolbar button:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="chat-wrapper">
+    <div class="chat-container">
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <div class="chat-title" id="titleText">Chat în timp real</div>
+          <div class="chat-subtitle" id="subtitleText">Node.js + Socket.IO demo</div>
+        </div>
+        <div class="chat-header-right">
+          <div class="lang-switch">
+            <button id="btnRO" class="active">RO</button>
+            <button id="btnEN">EN</button>
+          </div>
+          <div class="user-info" id="userInfo"></div>
+        </div>
+      </div>
+
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <div class="toolbar">
+        <span id="statusInfo">Conectat</span>
+        <button id="clearBtn">Șterge mesajele de pe ecran</button>
+      </div>
+
+      <div class="chat-input-area">
+        <input id="chatInput" type="text" placeholder="Scrie un mesaj și apasă Enter...">
+        <button id="sendBtn">Trimite</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const userInfo = document.getElementById("userInfo");
+    const statusInfo = document.getElementById("statusInfo");
+    const clearBtn = document.getElementById("clearBtn");
+    const titleText = document.getElementById("titleText");
+    const subtitleText = document.getElementById("subtitleText");
+    const btnRO = document.getElementById("btnRO");
+    const btnEN = document.getElementById("btnEN");
+
+    const strings = {
+      ro: {
+        title: "Chat în timp real",
+        subtitle: "Node.js + Socket.IO demo",
+        statusConnected: "Conectat",
+        statusDisconnected: "Deconectat (server oprit?)",
+        clearButton: "Șterge mesajele de pe ecran",
+        placeholder: "Scrie un mesaj și apasă Enter...",
+        sendButton: "Trimite",
+        promptName: "Introdu numele tău pentru chat:",
+        you: "Tu",
+        anon: "Anonim"
+      },
+      en: {
+        title: "Live chat",
+        subtitle: "Node.js + Socket.IO demo",
+        statusConnected: "Connected",
+        statusDisconnected: "Disconnected (server stopped?)",
+        clearButton: "Clear messages from screen",
+        placeholder: "Type a message and press Enter...",
+        sendButton: "Send",
+        promptName: "Enter your name for the chat:",
+        you: "You",
+        anon: "Anonymous"
+      }
+    };
+
+    let currentLang = "ro";
+
+    function applyLanguage() {
+      const t = strings[currentLang];
+      titleText.textContent = t.title;
+      subtitleText.textContent = t.subtitle;
+      statusInfo.textContent = t.statusConnected;
+      clearBtn.textContent = t.clearButton;
+      chatInput.placeholder = t.placeholder;
+      sendBtn.textContent = t.sendButton;
+      if (username) {
+        userInfo.textContent = t.you + ": " + username;
+      }
+      btnRO.classList.toggle("active", currentLang === "ro");
+      btnEN.classList.toggle("active", currentLang === "en");
+    }
+
+    let username = "";
+    while (!username || !username.trim()) {
+      username = prompt(strings[currentLang].promptName);
+      if (username === null) {
+        username = strings[currentLang].anon;
+        break;
+      }
+    }
+    username = username.trim();
+    if (!username) username = strings[currentLang].anon;
+
+    applyLanguage();
+
+    function addMessage(data) {
+      const div = document.createElement("div");
+      const isSelf = data.id === socket.id;
+      const t = strings[currentLang];
+
+      div.classList.add("message", isSelf ? "self" : "other");
+
+      const meta = document.createElement("div");
+      meta.classList.add("meta");
+      const nameToShow = isSelf ? t.you : data.name || t.anon;
+      const datePart = data.date || "";
+      const timePart = data.time || "";
+      const dateTime = (datePart && timePart) ? `${datePart} • ${timePart}` : (timePart || "");
+      meta.textContent = dateTime ? `${nameToShow} • ${dateTime}` : nameToShow;
+
+      const text = document.createElement("div");
+      text.classList.add("text");
+      text.textContent = data.text;
+
+      div.appendChild(meta);
+      div.appendChild(text);
+
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendMessage() {
+      const text = chatInput.value;
+      if (!text.trim()) return;
+
+      socket.emit("chatMessage", {
+        text: text,
+        name: username
+      });
+
+      chatInput.value = "";
+      chatInput.focus();
+    }
+
+    sendBtn.onclick = sendMessage;
+    chatInput.onkeydown = (e) => {
+      if (e.key === "Enter") sendMessage();
+    };
+
+    socket.on("chatHistory", (history) => {
+      chatMessages.innerHTML = "";
+      history.forEach(addMessage);
+    });
+
+    socket.on("chatMessage", addMessage);
+
+    socket.on("connect", () => {
+      statusInfo.textContent = strings[currentLang].statusConnected;
+    });
+
+    socket.on("disconnect", () => {
+      statusInfo.textContent = strings[currentLang].statusDisconnected;
+    });
+
+    clearBtn.onclick = () => {
+      chatMessages.innerHTML = "";
+    };
+
+    btnRO.onclick = () => {
+      currentLang = "ro";
+      applyLanguage();
+    };
+
+    btnEN.onclick = () => {
+      currentLang = "en";
+      applyLanguage();
+    };
+
+    // înregistrare service worker (PWA)
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch(err => {
+        console.log("Nu am putut înregistra service worker:", err);
+      });
+    }
+  </script>
+
+</body>
+</html>
